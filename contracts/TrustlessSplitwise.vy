@@ -82,7 +82,7 @@ def deposit():
 def withdraw(amount: uint256):
   assert not self.done, "contract is terminated"
   assert self.members[msg.sender], "withdrawer is not a member in the group"
-  assert self.balances[msg.sender] > amount, "insufficient balance"
+  assert self.balances[msg.sender] >= amount, "insufficient balance"
 
   self.balances[msg.sender] -= amount
 
