@@ -62,24 +62,11 @@ def addMember(account: address):
   assert not self.done, "contract is terminated"
   assert self.numMembers < MAX_USERS, "too many users"
   assert not self.members[account], "user already added"
+  assert self.members[msg.sender], "must be a member of the group to add someone"
 
   self.members[account] = True
   self.memberList[self.numMembers] = account
   self.numMembers += 1
-
-# Return wealth of an account 
-@internal
-@view
-def _wealth(account: address) -> uint256:
-  return self.balances[account]
-
-# External wrapper to check balance of an account
-@external
-@view
-def wealth(account: address) -> uint256:
-  assert not self.done, "contract is terminated"
-  assert self.members[account], "account is not member in the group"
-  return self._wealth(account)
 
 # Deposit some eth in the contract for use in the group
 @external
@@ -95,7 +82,7 @@ def deposit():
 def withdraw(amount: uint256):
   assert not self.done, "contract is terminated"
   assert self.members[msg.sender], "withdrawer is not a member in the group"
-  assert self._wealth(msg.sender) > amount, "insufficient balance"
+  assert self.balances[msg.sender] > amount, "insufficient balance"
 
   self.balances[msg.sender] -= amount
 
@@ -109,7 +96,7 @@ def transact(receiver: address, amount: uint256):
   assert not self.done, "contract is terminated"
   assert self.members[receiver], "reciever is not a member in the group"
   assert self.members[msg.sender], "sender is not a member in the group"
-  assert self._wealth(msg.sender) >= amount, "insufficient funds"
+  assert self.balances[msg.sender] >= amount, "insufficient balance"
   
   self.balances[msg.sender] -= amount
   self.balances[receiver] += amount
@@ -130,13 +117,16 @@ def settleUp():
   for i in range(ind, ind + MAX_SETTLE):
     if i >= self.numMembers:
       self.numSettled = self.numMembers
+      self.done = True
 
     account: address = self.memberList[i]
-    wealth: uint256 = self._wealth(account)
+    curr_balance: uint256 = self.balances[account]
 
     self.balances[account] = 0
     self.members[account] = False
     self.memberList[i] = ZERO_ADDRESS
 
-    send(account, wealth)
+    send(account, curr_balance)
+
+    log Withdrawal(account, curr_balance)
   
