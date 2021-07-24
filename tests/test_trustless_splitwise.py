@@ -66,7 +66,21 @@ def test_deposit_valid(trustless_splitwise_contract, accounts):
   
   # Check to make sure the correct deposit event was logged
   assert tx.events[0]['account'] == accounts[0]
-  assert tx.events[0]['amount'] == 1
+  assert tx.events[0]['amount'] == deposit_amt
+  
+def test_deposit_max(trustless_splitwise_contract, accounts):
+  initial_balance = accounts[0].balance()
+  deposit_amt = initial_balance
+  
+  # Deposit 1 wei, store the transaction event in tx so that we can check on events later
+  tx = trustless_splitwise_contract.deposit({'from': accounts[0], 'amount': deposit_amt})
+  assert trustless_splitwise_contract.balances(accounts[0]) == deposit_amt
+  
+  assert accounts[0].balance() == initial_balance - deposit_amt
+  
+  # Check to make sure the correct deposit event was logged
+  assert tx.events[0]['account'] == accounts[0]
+  assert tx.events[0]['amount'] == deposit_amt
   
 def test_deposit_not_member(trustless_splitwise_contract, accounts):
   # Try to write from an account that is not an added member
